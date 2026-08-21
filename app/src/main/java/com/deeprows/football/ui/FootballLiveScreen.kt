@@ -1,11 +1,13 @@
 package com.deeprows.football.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,7 +47,9 @@ private val AccentRed = Color(0xFFFF1744)
 private val LiveGreen = Color(0xFF35D07F)
 
 @Composable
-fun FootballLiveScreen() {
+fun FootballLiveScreen(
+    onMatchSelected: (FootballMatch) -> Unit
+) {
 
     var currentTime by remember {
         mutableStateOf(
@@ -54,7 +58,7 @@ fun FootballLiveScreen() {
     }
 
     /*
-     * Update the current time every second.
+     * Keep the football screen updated every second.
      */
     LaunchedEffect(Unit) {
 
@@ -66,12 +70,16 @@ fun FootballLiveScreen() {
         }
     }
 
+    /*
+     * Get matches from the repository.
+     */
     val matches = remember {
         FootballRepository.getMatches()
     }
 
     /*
-     * Calculate the current status dynamically.
+     * Recalculate the status of every match
+     * using the current time.
      */
     val updatedMatches = matches.map { match ->
 
@@ -89,8 +97,12 @@ fun FootballLiveScreen() {
      * LIVE
      * UPCOMING
      * ENDED
+     *
+     * Within each group, matches are
+     * ordered by kickoff time.
      */
     val sortedMatches = updatedMatches.sortedWith(
+
         compareBy<FootballMatch> {
 
             when (it.status) {
@@ -113,10 +125,9 @@ fun FootballLiveScreen() {
             .fillMaxSize()
             .background(Background),
 
-        contentPadding =
-            androidx.compose.foundation.layout.PaddingValues(
-                bottom = 24.dp
-            )
+        contentPadding = PaddingValues(
+            bottom = 24.dp
+        )
     ) {
 
         item {
@@ -142,7 +153,10 @@ fun FootballLiveScreen() {
 
             FootballMatchCard(
                 match = match,
-                currentTime = currentTime
+                currentTime = currentTime,
+                onClick = {
+                    onMatchSelected(match)
+                }
             )
         }
 
@@ -229,11 +243,11 @@ private fun LiveBanner(
                 modifier = Modifier
                     .size(10.dp)
                     .background(
-                        if (liveCount > 0)
+                        if (liveCount > 0) {
                             LiveGreen
-                        else
-                            AccentRed,
-
+                        } else {
+                            AccentRed
+                        },
                         RoundedCornerShape(50)
                     )
             )
@@ -245,10 +259,11 @@ private fun LiveBanner(
             ) {
 
                 Text(
-                    text = if (liveCount > 0)
+                    text = if (liveCount > 0) {
                         "$liveCount LIVE MATCHES"
-                    else
-                        "FOOTBALL LIVE",
+                    } else {
+                        "FOOTBALL LIVE"
+                    },
 
                     color = PrimaryText,
                     fontSize = 14.sp,
@@ -257,7 +272,6 @@ private fun LiveBanner(
 
                 Text(
                     text = "$upcomingCount upcoming matches",
-
                     color = SecondaryText,
                     fontSize = 12.sp
                 )
@@ -288,7 +302,8 @@ private fun MatchSectionTitle(
 @Composable
 private fun FootballMatchCard(
     match: FootballMatch,
-    currentTime: OffsetDateTime
+    currentTime: OffsetDateTime,
+    onClick: () -> Unit
 ) {
 
     val localKickoff =
@@ -308,6 +323,9 @@ private fun FootballMatchCard(
             .padding(
                 horizontal = 16.dp,
                 vertical = 5.dp
+            )
+            .clickable(
+                onClick = onClick
             ),
 
         shape = RoundedCornerShape(18.dp),
@@ -452,6 +470,16 @@ private fun FootballMatchCard(
                     }
                 }
             }
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            Text(
+                text = "Tap to view match",
+                color = SecondaryText,
+                fontSize = 10.sp
+            )
         }
     }
 }
