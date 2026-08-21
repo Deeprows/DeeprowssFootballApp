@@ -18,12 +18,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.deeprows.football.data.FootballMatch
+import com.deeprows.football.data.FootballRepository
+import com.deeprows.football.data.MatchStatus
 
 private val Background = Color(0xFF07090D)
 private val CardBackground = Color(0xFF10141B)
@@ -33,49 +37,12 @@ private val SecondaryText = Color(0xFF9AA3AE)
 private val AccentRed = Color(0xFFFF1744)
 private val LiveGreen = Color(0xFF35D07F)
 
-private enum class MatchStatus {
-    LIVE,
-    UPCOMING,
-    ENDED
-}
-
-private data class FootballMatch(
-    val competition: String,
-    val homeTeam: String,
-    val awayTeam: String,
-    val time: String,
-    val status: MatchStatus
-)
-
-private val matches = listOf(
-
-    FootballMatch(
-        competition = "Premier League",
-        homeTeam = "Arsenal",
-        awayTeam = "Coventry City",
-        time = "20:00",
-        status = MatchStatus.UPCOMING
-    ),
-
-    FootballMatch(
-        competition = "Premier League",
-        homeTeam = "Chelsea",
-        awayTeam = "Real Sociedad",
-        time = "20:30",
-        status = MatchStatus.UPCOMING
-    ),
-
-    FootballMatch(
-        competition = "La Liga",
-        homeTeam = "Barcelona",
-        awayTeam = "Valencia",
-        time = "21:00",
-        status = MatchStatus.UPCOMING
-    )
-)
-
 @Composable
 fun FootballLiveScreen() {
+
+    val matches = remember {
+        FootballRepository.getMatches()
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -101,7 +68,10 @@ fun FootballLiveScreen() {
             )
         }
 
-        items(matches) { match ->
+        items(
+            items = matches,
+            key = { it.id }
+        ) { match ->
 
             FootballMatchCard(match)
         }
@@ -308,7 +278,7 @@ private fun FootballMatchCard(
                 ) {
 
                     Text(
-                        text = match.time,
+                        text = match.kickoff.substringAfter("T").substringBefore("+"),
                         color = PrimaryText,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold
