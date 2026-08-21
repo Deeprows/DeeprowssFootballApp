@@ -18,7 +18,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +32,9 @@ import androidx.compose.ui.unit.sp
 import com.deeprows.football.data.FootballMatch
 import com.deeprows.football.data.FootballRepository
 import com.deeprows.football.data.MatchStatus
+import com.deeprows.football.data.MatchTimeUtils
+import kotlinx.coroutines.delay
+import java.time.OffsetDateTime
 
 private val Background = Color(0xFF07090D)
 private val CardBackground = Color(0xFF10141B)
@@ -40,18 +47,76 @@ private val LiveGreen = Color(0xFF35D07F)
 @Composable
 fun FootballLiveScreen() {
 
+    var currentTime by remember {
+        mutableStateOf(
+            OffsetDateTime.now()
+        )
+    }
+
+    /*
+     * Update the current time every second.
+     */
+    LaunchedEffect(Unit) {
+
+        while (true) {
+
+            currentTime = OffsetDateTime.now()
+
+            delay(1000)
+        }
+    }
+
     val matches = remember {
         FootballRepository.getMatches()
     }
+
+    /*
+     * Calculate the current status dynamically.
+     */
+    val updatedMatches = matches.map { match ->
+
+        match.copy(
+            status = MatchTimeUtils.getStatus(
+                kickoff = match.kickoff,
+                now = currentTime
+            )
+        )
+    }
+
+    /*
+     * Match ordering:
+     *
+     * LIVE
+     * UPCOMING
+     * ENDED
+     */
+    val sortedMatches = updatedMatches.sortedWith(
+        compareBy<FootballMatch> {
+
+            when (it.status) {
+
+                MatchStatus.LIVE -> 0
+
+                MatchStatus.UPCOMING -> 1
+
+                MatchStatus.ENDED -> 2
+            }
+
+        }.thenBy {
+
+            it.kickoff
+        }
+    )
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(Background),
 
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            bottom = 24.dp
-        )
+        contentPadding =
+            androidx.compose.foundation.layout.PaddingValues(
+                bottom = 24.dp
+            )
     ) {
 
         item {
@@ -59,7 +124,9 @@ fun FootballLiveScreen() {
         }
 
         item {
-            LiveBanner()
+            LiveBanner(
+                matches = sortedMatches
+            )
         }
 
         item {
@@ -69,11 +136,14 @@ fun FootballLiveScreen() {
         }
 
         items(
-            items = matches,
+            items = sortedMatches,
             key = { it.id }
         ) { match ->
 
-            FootballMatchCard(match)
+            FootballMatchCard(
+                match = match,
+                currentTime = currentTime
+            )
         }
 
         item {
@@ -117,7 +187,19 @@ private fun FootballHeader() {
 }
 
 @Composable
-private fun LiveBanner() {
+private fun LiveBanner(
+    matches: List<FootballMatch>
+) {
+
+    val liveCount =
+        matches.count {
+            it.status == MatchStatus.LIVE
+        }
+
+    val upcomingCount =
+        matches.count {
+            it.status == MatchStatus.UPCOMING
+        }
 
     Card(
         modifier = Modifier
@@ -139,14 +221,19 @@ private fun LiveBanner() {
                 .fillMaxWidth()
                 .padding(16.dp),
 
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Box(
                 modifier = Modifier
                     .size(10.dp)
                     .background(
-                        AccentRed,
+                        if (liveCount > 0)
+                            LiveGreen
+                        else
+                            AccentRed,
+
                         RoundedCornerShape(50)
                     )
             )
@@ -158,14 +245,19 @@ private fun LiveBanner() {
             ) {
 
                 Text(
-                    text = "FOOTBALL LIVE",
+                    text = if (liveCount > 0)
+                        "$liveCount LIVE MATCHES"
+                    else
+                        "FOOTBALL LIVE",
+
                     color = PrimaryText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = "Follow today's fixtures",
+                    text = "$upcomingCount upcoming matches",
+
                     color = SecondaryText,
                     fontSize = 12.sp
                 )
@@ -195,8 +287,20 @@ private fun MatchSectionTitle(
 
 @Composable
 private fun FootballMatchCard(
-    match: FootballMatch
+    match: FootballMatch,
+    currentTime: OffsetDateTime
 ) {
+
+    val localKickoff =
+        MatchTimeUtils.formatLocalKickoff(
+            match.kickoff
+        )
+
+    val countdown =
+        MatchTimeUtils.formatCountdown(
+            match.kickoff,
+            currentTime
+        )
 
     Card(
         modifier = Modifier
@@ -277,22 +381,75 @@ private fun FootballMatchCard(
                         Alignment.End
                 ) {
 
-                    Text(
-                        text = match.kickoff.substringAfter("T").substringBefore("+"),
-                        color = PrimaryText,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    when (match.status) {
 
-                    Spacer(
-                        modifier = Modifier.height(4.dp)
-                    )
+                        MatchStatus.UPCOMING -> {
 
-                    Text(
-                        text = "Match",
-                        color = SecondaryText,
-                        fontSize = 10.sp
-                    )
+                            Text(
+                                text = localKickoff,
+                                color = PrimaryText,
+                                fontSize = 18.sp,
+                                fontWeight =
+                                    FontWeight.ExtraBold
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(4.dp)
+                            )
+
+                            Text(
+                                text = countdown,
+                                color = AccentRed,
+                                fontSize = 11.sp,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+                        }
+
+                        MatchStatus.LIVE -> {
+
+                            Text(
+                                text = "LIVE",
+                                color = LiveGreen,
+                                fontSize = 18.sp,
+                                fontWeight =
+                                    FontWeight.ExtraBold
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(4.dp)
+                            )
+
+                            Text(
+                                text = "Playing",
+                                color = SecondaryText,
+                                fontSize = 10.sp
+                            )
+                        }
+
+                        MatchStatus.ENDED -> {
+
+                            Text(
+                                text = localKickoff,
+                                color = SecondaryText,
+                                fontSize = 18.sp,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(4.dp)
+                            )
+
+                            Text(
+                                text = "ENDED",
+                                color = SecondaryText,
+                                fontSize = 10.sp,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -305,15 +462,27 @@ private fun StatusBadge(
 ) {
 
     val text = when (status) {
-        MatchStatus.LIVE -> "LIVE"
-        MatchStatus.UPCOMING -> "UPCOMING"
-        MatchStatus.ENDED -> "ENDED"
+
+        MatchStatus.LIVE ->
+            "LIVE"
+
+        MatchStatus.UPCOMING ->
+            "UPCOMING"
+
+        MatchStatus.ENDED ->
+            "ENDED"
     }
 
     val textColor = when (status) {
-        MatchStatus.LIVE -> LiveGreen
-        MatchStatus.UPCOMING -> SecondaryText
-        MatchStatus.ENDED -> SecondaryText
+
+        MatchStatus.LIVE ->
+            LiveGreen
+
+        MatchStatus.UPCOMING ->
+            SecondaryText
+
+        MatchStatus.ENDED ->
+            SecondaryText
     }
 
     Row(
