@@ -20,9 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
+import com.deeprows.football.data.FootballMatch
+import com.deeprows.football.data.FootballRepository
 import com.deeprows.football.ui.DeeprowssTheme
 import com.deeprows.football.ui.FootballLiveScreen
 import com.deeprows.football.ui.HomeScreen
+import com.deeprows.football.ui.MatchDetailsScreen
 
 private val NavigationBackground = Color(0xFF10141B)
 private val NavigationText = Color(0xFFF4F6F8)
@@ -39,6 +42,15 @@ private enum class AppTab(
     MORE("More", "⋯")
 }
 
+private sealed class AppScreen {
+
+    data object Main : AppScreen()
+
+    data class MatchDetails(
+        val match: FootballMatch
+    ) : AppScreen()
+}
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +59,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
+
             DeeprowssTheme {
+
                 DeeprowssApp()
             }
         }
@@ -61,6 +75,54 @@ private fun DeeprowssApp() {
         mutableStateOf(AppTab.HOME)
     }
 
+    var currentScreen by remember {
+        mutableStateOf<AppScreen>(
+            AppScreen.Main
+        )
+    }
+
+    when (val screen = currentScreen) {
+
+        AppScreen.Main -> {
+
+            MainAppScreen(
+                selectedTab = selectedTab,
+
+                onTabSelected = { tab ->
+
+                    selectedTab = tab
+                },
+
+                onMatchSelected = { match ->
+
+                    currentScreen =
+                        AppScreen.MatchDetails(match)
+                }
+            )
+        }
+
+        is AppScreen.MatchDetails -> {
+
+            MatchDetailsScreen(
+                match = screen.match,
+
+                onBack = {
+
+                    currentScreen =
+                        AppScreen.Main
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainAppScreen(
+    selectedTab: AppTab,
+    onTabSelected: (AppTab) -> Unit,
+    onMatchSelected: (FootballMatch) -> Unit
+) {
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
 
@@ -69,17 +131,23 @@ private fun DeeprowssApp() {
         bottomBar = {
 
             NavigationBar(
-                modifier = Modifier.navigationBarsPadding(),
-                containerColor = NavigationBackground
+                modifier =
+                    Modifier.navigationBarsPadding(),
+
+                containerColor =
+                    NavigationBackground
             ) {
 
                 AppTab.entries.forEach { tab ->
 
                     NavigationBarItem(
-                        selected = selectedTab == tab,
+
+                        selected =
+                            selectedTab == tab,
 
                         onClick = {
-                            selectedTab = tab
+
+                            onTabSelected(tab)
                         },
 
                         icon = {
@@ -87,11 +155,13 @@ private fun DeeprowssApp() {
                             Text(
                                 text = tab.icon,
                                 fontSize = 19.sp,
-                                color = NavigationText
+                                color =
+                                    NavigationText
                             )
                         },
 
                         label = {
+
                             Text(
                                 text = tab.title
                             )
@@ -105,26 +175,34 @@ private fun DeeprowssApp() {
         when (selectedTab) {
 
             AppTab.HOME -> {
+
                 HomeScreen()
             }
 
             AppTab.LIVE -> {
-                FootballLiveScreen()
+
+                FootballLiveScreen(
+                    onMatchSelected =
+                        onMatchSelected
+                )
             }
 
             AppTab.TV -> {
+
                 ScreenPlaceholder(
                     title = "TV Channels"
                 )
             }
 
             AppTab.MOVIES -> {
+
                 ScreenPlaceholder(
                     title = "Movies"
                 )
             }
 
             AppTab.MORE -> {
+
                 ScreenPlaceholder(
                     title = "More"
                 )
@@ -140,7 +218,9 @@ private fun ScreenPlaceholder(
 
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+
+        contentAlignment =
+            Alignment.Center
     ) {
 
         Text(
