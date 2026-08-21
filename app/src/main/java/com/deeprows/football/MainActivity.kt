@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.NavigationBar
@@ -15,14 +16,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import com.deeprows.football.ui.DeeprowssTheme
+import com.deeprows.football.ui.FootballLiveScreen
 import com.deeprows.football.ui.HomeScreen
 
 private val NavigationBackground = Color(0xFF10141B)
 private val NavigationText = Color(0xFFF4F6F8)
+private val AppBackground = Color(0xFF07090D)
 
 private enum class AppTab(
     val title: String,
@@ -60,7 +64,7 @@ private fun DeeprowssApp() {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
 
-        containerColor = Color(0xFF07090D),
+        containerColor = AppBackground,
 
         bottomBar = {
 
@@ -88,13 +92,15 @@ private fun DeeprowssApp() {
                         },
 
                         label = {
-                            Text(tab.title)
+                            Text(
+                                text = tab.title
+                            )
                         }
                     )
                 }
             }
         }
-    ) { paddingValues ->
+    ) {
 
         when (selectedTab) {
 
@@ -103,9 +109,7 @@ private fun DeeprowssApp() {
             }
 
             AppTab.LIVE -> {
-                ScreenPlaceholder(
-                    title = "Football Live"
-                )
+                FootballLiveScreen()
             }
 
             AppTab.TV -> {
@@ -134,9 +138,9 @@ private fun ScreenPlaceholder(
     title: String
 ) {
 
-    androidx.compose.foundation.layout.Box(
+    Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
+        contentAlignment = Alignment.Center
     ) {
 
         Text(
