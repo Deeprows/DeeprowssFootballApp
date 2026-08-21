@@ -21,15 +21,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -145,26 +138,16 @@ private fun DeeprowssFootballApp() {
 
                                 icon = {
 
-                                    Icon(
-                                        imageVector = when (tab) {
-
-                                            AppTab.HOME ->
-                                                Icons.Default.Home
-
-                                            AppTab.LIVE ->
-                                                Icons.Default.SportsSoccer
-
-                                            AppTab.TV ->
-                                                Icons.Default.Tv
-
-                                            AppTab.MOVIES ->
-                                                Icons.Default.Movie
-
-                                            AppTab.MORE ->
-                                                Icons.Default.MoreHoriz
+                                    Text(
+                                        text = when (tab) {
+                                            AppTab.HOME -> "⌂"
+                                            AppTab.LIVE -> "⚽"
+                                            AppTab.TV -> "TV"
+                                            AppTab.MOVIES -> "▶"
+                                            AppTab.MORE -> "⋯"
                                         },
-
-                                        contentDescription = tab.title
+                                        fontSize = 20.sp,
+                                        color = TextPrimary
                                     )
                                 },
 
@@ -450,7 +433,9 @@ private fun PlaceholderScreen(
                 .padding(24.dp),
 
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+
+            verticalArrangement =
+                Arrangement.Center
         ) {
 
             Text(
